@@ -9,9 +9,6 @@
 <body>
 <div id="app" class="wrap">
   <h1 class="page-title">rec3on3.web.app</h1>
-  <div class="toolbar">
-    <button class="btn secondary" @click="resetAll">リセット</button>
-  </div>
   <div class="title-display" @click="openTitleModal">
     <span v-if="pageTitle">{{ pageTitle }}</span>
     <span v-else style="color:#888;">タイトルを入力</span>
@@ -194,7 +191,6 @@ createApp({
       return color ? color.color : '#ccc';
     },
     addMatchup(){this.matchups.push(makeEmptyRow());},
-    resetAll(){this.matchups=[makeEmptyRow()];},
     cellFilled(c){return c.oppChar||c.order||c.result;},
     teamOutcome(row){const res=row.cells.map(c=>c.result);const w=res.filter(x=>x==='勝ち').length;const l=res.filter(x=>x==='負け').length;if(w>=2)return{type:'win'};if(l>=2)return{type:'lose'};return{type:'draw'};},
     teamClass(o){return{win:o.type==='win',lose:o.type==='lose',draw:o.type==='draw'};},
