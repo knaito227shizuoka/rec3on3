@@ -18,7 +18,7 @@
       <tr>
         <th v-for="(p,i) in players" :key="i" @click="openPlayerModal(i)" class="player-header">
           <div class="player-name">{{ p.name }}</div>
-          <div class="player-char">{{ p.colors.join('') }} {{ p.char }}</div>
+          <div class="player-char"><span class="color-icons">{{ p.colors.join('') }}</span>{{ p.char }}</div>
         </th>
         <th class="team-header"></th>
       </tr>
@@ -41,30 +41,41 @@
   </table>
 
   <!-- モーダル: セル編集 -->
-  <div class="modal-backdrop" :style="{display: modal.open?'block':'none'}">
+  <div class="modal-backdrop" :class="{show: modal.open}">
     <div class="modal">
       <div class="modal-head">
         <div v-if="modal.playerIdx !== null">{{ players[modal.playerIdx].name }} - {{ modal.rIdx + 1 }}戦目</div>
         <button class="btn secondary" @click="closeModal">閉じる</button>
       </div>
       <div class="field">
-        <label>相手キャラクターの色</label>
         <div class="colors">
-          <span v-for="c in colorOptions" :key="'opp-'+c.key" class="color-pill" :class="{active: modal.buf.oppColors.includes(c.icon)}" @click="toggleColor('oppColors',c.icon)">{{ c.icon }}</span>
+          <label v-for="c in colorOptions" :key="'opp-'+c.key" class="color-pill">
+            <input type="checkbox" :value="c.icon" v-model="modal.buf.oppColors">
+            <span>{{ c.icon }}</span>
+          </label>
         </div>
       </div>
       <div class="field">
-        <label>相手キャラクター名</label>
         <input class="input" v-model="modal.buf.oppChar" placeholder="キャラクター名">
       </div>
       <div class="field">
         <div class="radios">
-          <span class="radio" :class="{active: modal.buf.order==='先行'}" @click="modal.buf.order='先行'">先行</span>
-          <span class="radio" :class="{active: modal.buf.order==='後攻'}" @click="modal.buf.order='後攻'">後攻</span>
-        </div>
-        <div class="radios">
-          <span class="radio" :class="{active: modal.buf.result==='勝ち'}" @click="modal.buf.result='勝ち'">⭕️ 勝ち</span>
-          <span class="radio" :class="{active: modal.buf.result==='負け'}" @click="modal.buf.result='負け'">❌️ 負け</span>
+          <label class="radio">
+            <input type="radio" value="先行" v-model="modal.buf.order">
+            <span>先</span>
+          </label>
+          <label class="radio">
+            <input type="radio" value="後攻" v-model="modal.buf.order">
+            <span>後</span>
+          </label>
+          <label class="radio">
+            <input type="radio" value="勝ち" v-model="modal.buf.result">
+            <span>⭕️</span>
+          </label>
+          <label class="radio">
+            <input type="radio" value="負け" v-model="modal.buf.result">
+            <span>❌️</span>
+          </label>
         </div>
       </div>
       <div style="margin-top:12px;text-align:right;">
@@ -75,25 +86,25 @@
   </div>
 
   <!-- モーダル: プレイヤー名編集 -->
-  <div class="modal-backdrop" :style="{display: playerModal.open?'block':'none'}">
+  <div class="modal-backdrop" :class="{show: playerModal.open}">
     <div class="modal">
       <div class="modal-head">
         <div>プレイヤー情報を編集</div>
         <button class="btn secondary" @click="closePlayerModal">閉じる</button>
       </div>
       <div class="field">
-        <label>プレイヤー名</label>
-        <input class="input" v-model="playerModal.name">
+        <input class="input" v-model="playerModal.name" placeholder="プレイヤー名">
       </div>
       <div class="field">
-        <label>キャラクターの色</label>
         <div class="colors">
-          <span v-for="c in colorOptions" :key="'player-'+c.key" class="color-pill" :class="{active: playerModal.colors.includes(c.icon)}" @click="togglePlayerColor(c.icon)">{{ c.icon }}</span>
+          <label v-for="c in colorOptions" :key="'player-'+c.key" class="color-pill">
+            <input type="checkbox" :value="c.icon" v-model="playerModal.colors">
+            <span>{{ c.icon }}</span>
+          </label>
         </div>
       </div>
       <div class="field">
-        <label>キャラクター名</label>
-        <input class="input" v-model="playerModal.char">
+        <input class="input" v-model="playerModal.char" placeholder="キャラクター名">
       </div>
       <div style="margin-top:12px;text-align:right;">
         <button class="btn" @click="applyPlayerName">反映</button>
@@ -102,7 +113,7 @@
   </div>
 
   <!-- モーダル: マッチアップ削除 -->
-  <div class="modal-backdrop" :style="{display: deleteModal.open?'block':'none'}">
+  <div class="modal-backdrop" :class="{show: deleteModal.open}">
     <div class="modal">
       <div class="modal-head">
         <div>マッチアップを削除</div>
@@ -157,7 +168,8 @@ createApp({
     teamMark(o){return o.type==='win'?'◎':o.type==='lose'?'×':'△';},
     formatCell(cell){
       const resultSymbol = cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
-      const charInfo = [cell.oppColors.join(''), cell.oppChar].filter(Boolean).join('');
+      const colors = cell.oppColors.length ? `<span class="color-icons">${cell.oppColors.join('')}</span>` : '';
+      const charInfo = [colors, cell.oppChar].filter(Boolean).join('');
       const resultInfo = [cell.order, resultSymbol].filter(Boolean).join(' ');
       return [charInfo, resultInfo].filter(Boolean).join('<br>');
     },
@@ -170,7 +182,6 @@ createApp({
       this.modal.buf=JSON.parse(JSON.stringify(currentCell));
     },
     closeModal(){this.modal.open=false;},
-    toggleColor(target,icon){const arr=this.modal.buf[target];const idx=arr.indexOf(icon);if(idx>=0)arr.splice(idx,1);else arr.push(icon);},
     applyModal(){this.matchups[this.modal.rIdx].cells[this.modal.cIdx]=JSON.parse(JSON.stringify(this.modal.buf));this.closeModal();},
     clearCell(){this.matchups[this.modal.rIdx].cells[this.modal.cIdx]={oppChar:'',oppColors:[],order:'',result:''};this.closeModal();},
     openPlayerModal(i){
@@ -182,11 +193,6 @@ createApp({
       this.playerModal.colors=JSON.parse(JSON.stringify(player.colors));
     },
     closePlayerModal(){this.playerModal.open=false;},
-    togglePlayerColor(icon){
-      const idx=this.playerModal.colors.indexOf(icon);
-      if(idx>=0)this.playerModal.colors.splice(idx,1);
-      else this.playerModal.colors.push(icon);
-    },
     applyPlayerName(){
       const player=this.players[this.playerModal.index];
       player.name=this.playerModal.name;
