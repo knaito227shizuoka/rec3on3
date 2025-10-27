@@ -31,7 +31,7 @@ body {
 }
 
 .wrap {
-  padding: 16px;
+  padding: 10px 9px;
 }
 
 /* 見出し */
@@ -251,7 +251,7 @@ tbody td:last-child {
   border-radius: 8px;
   color: #1a1a1a;
   padding: 10px;
-  font-size: 0.95rem;
+  font-size: 16px;
   font-family: inherit;
 }
 
@@ -267,7 +267,7 @@ tbody td:last-child {
   justify-content: center;
   font-size: 1.5rem;
   margin-bottom: 0;
-  padding: 8px 0;
+  padding: 8px 0 0 0;
 }
 
 .color-box {
@@ -275,6 +275,9 @@ tbody td:last-child {
   user-select: none;
   padding: 4px;
   display: inline-block;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
 .color-box input[type="checkbox"] {
@@ -287,16 +290,16 @@ tbody td:last-child {
   height: 28px;
   border-radius: 4px;
   transition: transform 0.1s;
-  border: 2px solid transparent;
+  margin: 2px;
 }
 
-.color-box:hover .color-square {
+.color-box:hover {
   transform: scale(1.05);
 }
 
-.color-box input[type="checkbox"]:checked + .color-square {
+.color-box:has(input[type="checkbox"]:checked) {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent);
+  background: rgba(33, 150, 243, 0.1);
 }
 
 .color-dot {
