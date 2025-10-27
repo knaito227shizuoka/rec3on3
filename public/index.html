@@ -13,12 +13,20 @@
     <button class="btn" @click="addMatchup">＋ マッチアップを追加</button>
     <button class="btn secondary" @click="resetAll">リセット</button>
   </div>
+  <div class="title-display" @click="openTitleModal">
+    <span v-if="pageTitle">{{ pageTitle }}</span>
+    <span v-else style="color:#888;">タイトルを入力</span>
+    <span class="edit-icon">✏️</span>
+  </div>
   <table>
     <thead>
       <tr>
         <th v-for="(p,i) in players" :key="i" @click="openPlayerModal(i)" class="player-header">
-          <div class="player-name">{{ p.name }}</div>
-          <div class="player-char"><span class="color-icons">{{ p.colors.join('') }}</span>{{ p.char }}</div>
+          <div class="player-name">{{ getPlayerName(p, i) }}</div>
+          <div class="player-char">
+            <span v-for="colorKey in p.colors" :key="colorKey" class="color-dot" :style="{backgroundColor: getColorCode(colorKey)}"></span>
+            {{ p.char }}
+          </div>
         </th>
         <th class="team-header"></th>
       </tr>
@@ -30,7 +38,7 @@
             <div v-html="formatCell(cell)"></div>
           </template>
           <template v-else>
-            <div style="color:#888;">タップして入力</div>
+            <div style="color:#888;">タップして<br>入力</div>
           </template>
         </td>
         <td class="cell team" @click="openDeleteModal(rIdx)">
@@ -44,14 +52,13 @@
   <div class="modal-backdrop" :class="{show: modal.open}">
     <div class="modal">
       <div class="modal-head">
-        <div v-if="modal.playerIdx !== null">{{ players[modal.playerIdx].name }} - {{ modal.rIdx + 1 }}戦目</div>
-        <button class="btn secondary" @click="closeModal">閉じる</button>
+        <div v-if="modal.playerIdx !== null">{{ getPlayerName(players[modal.playerIdx], modal.playerIdx) }} - {{ modal.rIdx + 1 }}戦目</div>
       </div>
       <div class="field">
         <div class="colors">
-          <label v-for="c in colorOptions" :key="'opp-'+c.key" class="color-pill">
-            <input type="checkbox" :value="c.icon" v-model="modal.buf.oppColors">
-            <span>{{ c.icon }}</span>
+          <label v-for="c in colorOptions" :key="'opp-'+c.key" class="color-box">
+            <input type="checkbox" :value="c.key" v-model="modal.buf.oppColors">
+            <span class="color-square" :style="{backgroundColor: c.color}"></span>
           </label>
         </div>
       </div>
@@ -78,9 +85,9 @@
           </label>
         </div>
       </div>
-      <div style="margin-top:12px;text-align:right;">
+      <div style="margin-top:12px;text-align:center;">
         <button class="btn secondary" @click="clearCell">クリア</button>
-        <button class="btn" @click="applyModal">反映</button>
+        <button class="btn" @click="applyModal" style="margin-left:12px;">反映</button>
       </div>
     </div>
   </div>
@@ -97,16 +104,16 @@
       </div>
       <div class="field">
         <div class="colors">
-          <label v-for="c in colorOptions" :key="'player-'+c.key" class="color-pill">
-            <input type="checkbox" :value="c.icon" v-model="playerModal.colors">
-            <span>{{ c.icon }}</span>
+          <label v-for="c in colorOptions" :key="'player-'+c.key" class="color-box">
+            <input type="checkbox" :value="c.key" v-model="playerModal.colors">
+            <span class="color-square" :style="{backgroundColor: c.color}"></span>
           </label>
         </div>
       </div>
       <div class="field">
         <input class="input" v-model="playerModal.char" placeholder="キャラクター名">
       </div>
-      <div style="margin-top:12px;text-align:right;">
+      <div style="margin-top:12px;text-align:center;">
         <button class="btn" @click="applyPlayerName">反映</button>
       </div>
     </div>
@@ -123,13 +130,29 @@
         <div style="font-weight:600; margin-bottom:8px;">{{ deleteModal.index + 1 }}回目のマッチ</div>
         <div style="font-size:0.9rem; color:#666;">
           <div v-for="(cell, idx) in deleteModal.cells" :key="idx" style="margin-bottom:4px;">
-            {{ players[idx].name }}: {{ formatDeleteCell(cell) }}
+            {{ getPlayerName(players[idx], idx) }}: {{ formatDeleteCell(cell) }}
           </div>
         </div>
       </div>
-      <div style="text-align:right;">
-        <button class="btn secondary" @click="closeDeleteModal" style="margin-right:8px;">キャンセル</button>
-        <button class="btn" style="background:#e05555;" @click="confirmDelete">削除</button>
+      <div style="text-align:center;">
+        <button class="btn secondary" @click="closeDeleteModal">キャンセル</button>
+        <button class="btn" style="background:#e05555;margin-left:12px;" @click="confirmDelete">削除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: タイトル編集 -->
+  <div class="modal-backdrop" :class="{show: titleModal.open}">
+    <div class="modal">
+      <div class="modal-head">
+        <div>タイトルを編集</div>
+        <button class="btn secondary" @click="closeTitleModal">閉じる</button>
+      </div>
+      <div class="field">
+        <input class="input" v-model="titleModal.text" placeholder="タイトルを入力">
+      </div>
+      <div style="margin-top:12px;text-align:center;">
+        <button class="btn" @click="applyTitle">反映</button>
       </div>
     </div>
   </div>
@@ -140,26 +163,35 @@ const { createApp } = Vue;
 createApp({
   data(){
     return {
+      pageTitle:'',
       players:[
-        {name:'プレイヤー1',char:'',colors:[]},
-        {name:'プレイヤー2',char:'',colors:[]},
-        {name:'プレイヤー3',char:'',colors:[]}
+        {name:'',char:'',colors:[]},
+        {name:'',char:'',colors:[]},
+        {name:'',char:'',colors:[]}
       ],
       matchups:[makeEmptyRow()],
       modal:{open:false,rIdx:null,cIdx:null,playerIdx:null,buf:{oppChar:'',oppColors:[],order:'',result:''}},
       playerModal:{open:false,index:null,name:'',char:'',colors:[]},
       deleteModal:{open:false,index:null,cells:[]},
+      titleModal:{open:false,text:''},
       colorOptions:[
-        {key:'red',icon:'🟥'},
-        {key:'blue',icon:'🟦'},
-        {key:'green',icon:'🟩'},
-        {key:'purple',icon:'🟪'},
-        {key:'black',icon:'⬛️'},
-        {key:'yellow',icon:'🟨'}
+        {key:'red',color:'#dc3545'},
+        {key:'blue',color:'#0d6efd'},
+        {key:'green',color:'#198754'},
+        {key:'purple',color:'#6f42c1'},
+        {key:'black',color:'#212529'},
+        {key:'yellow',color:'#ffc107'}
       ]
     }
   },
   methods:{
+    getPlayerName(player, index){
+      return player.name || `Player${index + 1}`;
+    },
+    getColorCode(key){
+      const color = this.colorOptions.find(c => c.key === key);
+      return color ? color.color : '#ccc';
+    },
     addMatchup(){this.matchups.push(makeEmptyRow());},
     resetAll(){this.matchups=[makeEmptyRow()];},
     cellFilled(c){return c.oppChar||c.order||c.result;},
@@ -168,8 +200,8 @@ createApp({
     teamMark(o){return o.type==='win'?'◎':o.type==='lose'?'×':'△';},
     formatCell(cell){
       const resultSymbol = cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
-      const colors = cell.oppColors.length ? `<span class="color-icons">${cell.oppColors.join('')}</span>` : '';
-      const charInfo = [colors, cell.oppChar].filter(Boolean).join('');
+      const colorDots = cell.oppColors.map(key => `<span class="color-dot" style="background-color:${this.getColorCode(key)}"></span>`).join('');
+      const charInfo = [colorDots, cell.oppChar].filter(Boolean).join('');
       const resultInfo = [cell.order, resultSymbol].filter(Boolean).join(' ');
       return [charInfo, resultInfo].filter(Boolean).join('<br>');
     },
@@ -183,7 +215,11 @@ createApp({
     },
     closeModal(){this.modal.open=false;},
     applyModal(){this.matchups[this.modal.rIdx].cells[this.modal.cIdx]=JSON.parse(JSON.stringify(this.modal.buf));this.closeModal();},
-    clearCell(){this.matchups[this.modal.rIdx].cells[this.modal.cIdx]={oppChar:'',oppColors:[],order:'',result:''};this.closeModal();},
+    clearCell(){
+      if(!confirm('この対戦記録をクリアしますか？'))return;
+      this.matchups[this.modal.rIdx].cells[this.modal.cIdx]={oppChar:'',oppColors:[],order:'',result:''};
+      this.closeModal();
+    },
     openPlayerModal(i){
       this.playerModal.open=true;
       this.playerModal.index=i;
@@ -209,6 +245,7 @@ createApp({
       this.deleteModal.open=false;
     },
     confirmDelete(){
+      if(!confirm('3人の対戦記録を削除しますか？'))return;
       this.matchups.splice(this.deleteModal.index,1);
       if(this.matchups.length===0)this.matchups.push(makeEmptyRow());
       this.closeDeleteModal();
@@ -216,7 +253,17 @@ createApp({
     formatDeleteCell(cell){
       if(!this.cellFilled(cell))return '未入力';
       const resultSymbol=cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
-      return `${cell.oppColors.join('')}${cell.oppChar} ${cell.order}${resultSymbol}`;
+      const colorNames = cell.oppColors.map(key => key).join(',');
+      return `${colorNames}${cell.oppChar} ${cell.order}${resultSymbol}`;
+    },
+    openTitleModal(){
+      this.titleModal.open=true;
+      this.titleModal.text=this.pageTitle;
+    },
+    closeTitleModal(){this.titleModal.open=false;},
+    applyTitle(){
+      this.pageTitle=this.titleModal.text;
+      this.closeTitleModal();
     }
   }
 }).mount('#app');
