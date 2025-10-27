@@ -68,6 +68,14 @@ h1 {
   margin-bottom: 10px;
 }
 
+.add-row-btn {
+  background: #fff;
+  color: #696969;
+  border: solid 1px #d1d1d1;
+  border-radius: 2px;
+  padding: 5px 10px;
+}
+
 .btn {
   background: var(--accent);
   color: #fff;
@@ -94,7 +102,8 @@ h1 {
   text-align: center;
   margin-bottom: 7px;
   padding: 6px;
-  background: #dcf0ff;
+  background: linear-gradient(135deg, #8866ea 0%, #f32121 100%);
+  color: #fff;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
