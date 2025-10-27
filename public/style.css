@@ -68,14 +68,6 @@ h1 {
   margin-bottom: 10px;
 }
 
-.add-row-btn {
-  background: #fff;
-  color: #696969;
-  border: solid 1px #d1d1d1;
-  border-radius: 2px;
-  padding: 5px 10px;
-}
-
 .btn {
   background: var(--accent);
   color: #fff;

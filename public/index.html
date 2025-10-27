@@ -10,7 +10,6 @@
 <div id="app" class="wrap">
   <h1 class="page-title">rec3on3.web.app</h1>
   <div class="toolbar">
-    <button class="add-row-btn" @click="addMatchup">＋ マッチアップを追加</button>
     <button class="btn secondary" @click="resetAll">リセット</button>
   </div>
   <div class="title-display" @click="openTitleModal">
@@ -47,6 +46,9 @@
       </tr>
     </tbody>
   </table>
+  <div style="text-align:center;margin-top:16px;">
+    <button class="btn" @click="addMatchup">＋ マッチアップを追加</button>
+  </div>
 
   <!-- モーダル: セル編集 -->
   <div class="modal-backdrop" :class="{show: modal.open}">
@@ -86,8 +88,7 @@
         </div>
       </div>
       <div style="margin-top:12px;text-align:center;">
-        <button class="btn secondary" @click="clearCell">クリア</button>
-        <button class="btn" @click="applyModal" style="margin-left:12px;">反映</button>
+        <button class="btn" @click="applyModal">反映</button>
       </div>
     </div>
   </div>
