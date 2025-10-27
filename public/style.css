@@ -94,6 +94,7 @@ table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: fixed;
 }
 
 thead th {
@@ -109,11 +110,11 @@ thead th {
 }
 
 .player-header {
-  width: calc((100% - 80px) / 3);
+  width: 30%;
 }
 
 .team-header {
-  width: 80px;
+  width: 10%;
 }
 
 .player-name {
@@ -131,29 +132,24 @@ tbody tr {
   background: var(--card);
 }
 
-tbody tr td {
-  padding-top: 8px;
+tbody td {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 80px;
+tbody td:last-child {
+  border-right: none;
 }
 
 .cell {
   padding: 10px;
-  border-right: 1px solid var(--border);
   cursor: pointer;
   text-align: center;
   min-height: 80px;
   white-space: pre-line;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cell:last-child {
-  border-right: none;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .team {

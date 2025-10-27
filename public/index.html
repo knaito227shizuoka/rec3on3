@@ -20,25 +20,21 @@
           <div class="player-name">{{ p.name }}</div>
           <div class="player-char">{{ p.colors.join('') }} {{ p.char }}</div>
         </th>
-        <th class="team-header">チーム</th>
+        <th class="team-header"></th>
       </tr>
     </thead>
     <tbody>
       <tr v-for="(row, rIdx) in matchups" :key="row.id">
-        <td colspan="4">
-          <div class="row">
-            <div class="cell" v-for="(cell, cIdx) in row.cells" :key="cIdx" @click="openModal(rIdx,cIdx)">
-              <template v-if="cellFilled(cell)">
-                <div v-html="formatCell(cell)"></div>
-              </template>
-              <template v-else>
-                <div style="color:#888;">タップして入力</div>
-              </template>
-            </div>
-            <div class="cell team" @click="openDeleteModal(rIdx)">
-              <div :class="teamClass(teamOutcome(row))">{{ teamMark(teamOutcome(row)) }}</div>
-            </div>
-          </div>
+        <td v-for="(cell, cIdx) in row.cells" :key="cIdx" class="cell" @click="openModal(rIdx,cIdx)">
+          <template v-if="cellFilled(cell)">
+            <div v-html="formatCell(cell)"></div>
+          </template>
+          <template v-else>
+            <div style="color:#888;">タップして入力</div>
+          </template>
+        </td>
+        <td class="cell team" @click="openDeleteModal(rIdx)">
+          <div :class="teamClass(teamOutcome(row))">{{ teamMark(teamOutcome(row)) }}</div>
         </td>
       </tr>
     </tbody>
@@ -161,12 +157,9 @@ createApp({
     teamMark(o){return o.type==='win'?'◎':o.type==='lose'?'×':'△';},
     formatCell(cell){
       const resultSymbol = cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
-      const parts = [
-        cell.oppColors.join(''),
-        cell.oppChar,
-        `${cell.order}${resultSymbol}`
-      ].filter(Boolean);
-      return parts.join('<br>');
+      const charInfo = [cell.oppColors.join(''), cell.oppChar].filter(Boolean).join('');
+      const resultInfo = [cell.order, resultSymbol].filter(Boolean).join(' ');
+      return [charInfo, resultInfo].filter(Boolean).join('<br>');
     },
     openModal(r,c){
       this.modal.open=true;
