@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>3人チーム 成績表（その場限り）</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="wrap">
+  <h1 class="page-title">rec3on3.web.app</h1>
+  <div class="toolbar">
+    <button class="btn" @click="addMatchup">＋ マッチアップを追加</button>
+    <button class="btn secondary" @click="resetAll">リセット</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th v-for="(p,i) in players" :key="i" @click="openPlayerModal(i)" class="player-header">
+          <div class="player-name">{{ p.name }}</div>
+          <div class="player-char">{{ p.colors.join('') }} {{ p.char }}</div>
+        </th>
+        <th class="team-header">チーム</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rIdx) in matchups" :key="row.id">
+        <td colspan="4">
+          <div class="row">
+            <div class="cell" v-for="(cell, cIdx) in row.cells" :key="cIdx" @click="openModal(rIdx,cIdx)">
+              <template v-if="cellFilled(cell)">
+                <div v-html="formatCell(cell)"></div>
+              </template>
+              <template v-else>
+                <div style="color:#888;">タップして入力</div>
+              </template>
+            </div>
+            <div class="cell team" @click="openDeleteModal(rIdx)">
+              <div :class="teamClass(teamOutcome(row))">{{ teamMark(teamOutcome(row)) }}</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- モーダル: セル編集 -->
+  <div class="modal-backdrop" :style="{display: modal.open?'block':'none'}">
+    <div class="modal">
+      <div class="modal-head">
+        <div v-if="modal.playerIdx !== null">{{ players[modal.playerIdx].name }} - {{ modal.rIdx + 1 }}戦目</div>
+        <button class="btn secondary" @click="closeModal">閉じる</button>
+      </div>
+      <div class="field">
+        <label>相手キャラクターの色</label>
+        <div class="colors">
+          <span v-for="c in colorOptions" :key="'opp-'+c.key" class="color-pill" :class="{active: modal.buf.oppColors.includes(c.icon)}" @click="toggleColor('oppColors',c.icon)">{{ c.icon }}</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>相手キャラクター名</label>
+        <input class="input" v-model="modal.buf.oppChar" placeholder="キャラクター名">
+      </div>
+      <div class="field">
+        <div class="radios">
+          <span class="radio" :class="{active: modal.buf.order==='先行'}" @click="modal.buf.order='先行'">先行</span>
+          <span class="radio" :class="{active: modal.buf.order==='後攻'}" @click="modal.buf.order='後攻'">後攻</span>
+        </div>
+        <div class="radios">
+          <span class="radio" :class="{active: modal.buf.result==='勝ち'}" @click="modal.buf.result='勝ち'">⭕️ 勝ち</span>
+          <span class="radio" :class="{active: modal.buf.result==='負け'}" @click="modal.buf.result='負け'">❌️ 負け</span>
+        </div>
+      </div>
+      <div style="margin-top:12px;text-align:right;">
+        <button class="btn secondary" @click="clearCell">クリア</button>
+        <button class="btn" @click="applyModal">反映</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: プレイヤー名編集 -->
+  <div class="modal-backdrop" :style="{display: playerModal.open?'block':'none'}">
+    <div class="modal">
+      <div class="modal-head">
+        <div>プレイヤー情報を編集</div>
+        <button class="btn secondary" @click="closePlayerModal">閉じる</button>
+      </div>
+      <div class="field">
+        <label>プレイヤー名</label>
+        <input class="input" v-model="playerModal.name">
+      </div>
+      <div class="field">
+        <label>キャラクターの色</label>
+        <div class="colors">
+          <span v-for="c in colorOptions" :key="'player-'+c.key" class="color-pill" :class="{active: playerModal.colors.includes(c.icon)}" @click="togglePlayerColor(c.icon)">{{ c.icon }}</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>キャラクター名</label>
+        <input class="input" v-model="playerModal.char">
+      </div>
+      <div style="margin-top:12px;text-align:right;">
+        <button class="btn" @click="applyPlayerName">反映</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: マッチアップ削除 -->
+  <div class="modal-backdrop" :style="{display: deleteModal.open?'block':'none'}">
+    <div class="modal">
+      <div class="modal-head">
+        <div>マッチアップを削除</div>
+        <button class="btn secondary" @click="closeDeleteModal">キャンセル</button>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:600; margin-bottom:8px;">{{ deleteModal.index + 1 }}回目のマッチ</div>
+        <div style="font-size:0.9rem; color:#666;">
+          <div v-for="(cell, idx) in deleteModal.cells" :key="idx" style="margin-bottom:4px;">
+            {{ players[idx].name }}: {{ formatDeleteCell(cell) }}
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <button class="btn secondary" @click="closeDeleteModal" style="margin-right:8px;">キャンセル</button>
+        <button class="btn" style="background:#e05555;" @click="confirmDelete">削除</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue;
+createApp({
+  data(){
+    return {
+      players:[
+        {name:'プレイヤー1',char:'',colors:[]},
+        {name:'プレイヤー2',char:'',colors:[]},
+        {name:'プレイヤー3',char:'',colors:[]}
+      ],
+      matchups:[makeEmptyRow()],
+      modal:{open:false,rIdx:null,cIdx:null,playerIdx:null,buf:{oppChar:'',oppColors:[],order:'',result:''}},
+      playerModal:{open:false,index:null,name:'',char:'',colors:[]},
+      deleteModal:{open:false,index:null,cells:[]},
+      colorOptions:[
+        {key:'red',icon:'🟥'},
+        {key:'blue',icon:'🟦'},
+        {key:'green',icon:'🟩'},
+        {key:'purple',icon:'🟪'},
+        {key:'black',icon:'⬛️'},
+        {key:'yellow',icon:'🟨'}
+      ]
+    }
+  },
+  methods:{
+    addMatchup(){this.matchups.push(makeEmptyRow());},
+    resetAll(){this.matchups=[makeEmptyRow()];},
+    cellFilled(c){return c.oppChar||c.order||c.result;},
+    teamOutcome(row){const res=row.cells.map(c=>c.result);const w=res.filter(x=>x==='勝ち').length;const l=res.filter(x=>x==='負け').length;if(w>=2)return{type:'win'};if(l>=2)return{type:'lose'};return{type:'draw'};},
+    teamClass(o){return{win:o.type==='win',lose:o.type==='lose',draw:o.type==='draw'};},
+    teamMark(o){return o.type==='win'?'◎':o.type==='lose'?'×':'△';},
+    formatCell(cell){
+      const resultSymbol = cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
+      const parts = [
+        cell.oppColors.join(''),
+        cell.oppChar,
+        `${cell.order}${resultSymbol}`
+      ].filter(Boolean);
+      return parts.join('<br>');
+    },
+    openModal(r,c){
+      this.modal.open=true;
+      this.modal.rIdx=r;
+      this.modal.cIdx=c;
+      this.modal.playerIdx=c;
+      const currentCell = this.matchups[r].cells[c];
+      this.modal.buf=JSON.parse(JSON.stringify(currentCell));
+    },
+    closeModal(){this.modal.open=false;},
+    toggleColor(target,icon){const arr=this.modal.buf[target];const idx=arr.indexOf(icon);if(idx>=0)arr.splice(idx,1);else arr.push(icon);},
+    applyModal(){this.matchups[this.modal.rIdx].cells[this.modal.cIdx]=JSON.parse(JSON.stringify(this.modal.buf));this.closeModal();},
+    clearCell(){this.matchups[this.modal.rIdx].cells[this.modal.cIdx]={oppChar:'',oppColors:[],order:'',result:''};this.closeModal();},
+    openPlayerModal(i){
+      this.playerModal.open=true;
+      this.playerModal.index=i;
+      const player=this.players[i];
+      this.playerModal.name=player.name;
+      this.playerModal.char=player.char;
+      this.playerModal.colors=JSON.parse(JSON.stringify(player.colors));
+    },
+    closePlayerModal(){this.playerModal.open=false;},
+    togglePlayerColor(icon){
+      const idx=this.playerModal.colors.indexOf(icon);
+      if(idx>=0)this.playerModal.colors.splice(idx,1);
+      else this.playerModal.colors.push(icon);
+    },
+    applyPlayerName(){
+      const player=this.players[this.playerModal.index];
+      player.name=this.playerModal.name;
+      player.char=this.playerModal.char;
+      player.colors=JSON.parse(JSON.stringify(this.playerModal.colors));
+      this.closePlayerModal();
+    },
+    openDeleteModal(idx){
+      this.deleteModal.open=true;
+      this.deleteModal.index=idx;
+      this.deleteModal.cells=this.matchups[idx].cells;
+    },
+    closeDeleteModal(){
+      this.deleteModal.open=false;
+    },
+    confirmDelete(){
+      this.matchups.splice(this.deleteModal.index,1);
+      if(this.matchups.length===0)this.matchups.push(makeEmptyRow());
+      this.closeDeleteModal();
+    },
+    formatDeleteCell(cell){
+      if(!this.cellFilled(cell))return '未入力';
+      const resultSymbol=cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
+      return `${cell.oppColors.join('')}${cell.oppChar} ${cell.order}${resultSymbol}`;
+    }
+  }
+}).mount('#app');
+function makeEmptyRow(){return{id:Math.random().toString(36).slice(2),cells:[{oppChar:'',oppColors:[],order:'',result:''},{oppChar:'',oppColors:[],order:'',result:''},{oppChar:'',oppColors:[],order:'',result:''}]};}
+</script>
+</body>
+</html>
