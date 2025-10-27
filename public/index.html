@@ -67,19 +67,19 @@
       <div class="field">
         <div class="radios">
           <label class="radio">
-            <input type="radio" value="先行" v-model="modal.buf.order">
+            <input type="radio" value="first" v-model="modal.buf.order">
             <span>先</span>
           </label>
           <label class="radio">
-            <input type="radio" value="後攻" v-model="modal.buf.order">
+            <input type="radio" value="second" v-model="modal.buf.order">
             <span>後</span>
           </label>
           <label class="radio">
-            <input type="radio" value="勝ち" v-model="modal.buf.result">
+            <input type="radio" value="win" v-model="modal.buf.result">
             <span>⭕️</span>
           </label>
           <label class="radio">
-            <input type="radio" value="負け" v-model="modal.buf.result">
+            <input type="radio" value="lose" v-model="modal.buf.result">
             <span>❌️</span>
           </label>
         </div>
@@ -190,16 +190,21 @@ createApp({
       const color = this.colorOptions.find(c => c.key === key);
       return color ? color.color : '#ccc';
     },
+    orderText(order){
+      return order==='first'?'先':order==='second'?'後':'';
+    },
+    resultSymbol(result){
+      return result==='win'?'⭕️':result==='lose'?'❌️':'';
+    },
     addMatchup(){this.matchups.push(makeEmptyRow());},
     cellFilled(c){return c.oppChar||c.order||c.result;},
-    teamOutcome(row){const res=row.cells.map(c=>c.result);const w=res.filter(x=>x==='勝ち').length;const l=res.filter(x=>x==='負け').length;if(w>=2)return{type:'win'};if(l>=2)return{type:'lose'};return{type:'draw'};},
+    teamOutcome(row){const res=row.cells.map(c=>c.result);const w=res.filter(x=>x==='win').length;const l=res.filter(x=>x==='lose').length;if(w>=2)return{type:'win'};if(l>=2)return{type:'lose'};return{type:'draw'};},
     teamClass(o){return{win:o.type==='win',lose:o.type==='lose',draw:o.type==='draw'};},
     teamMark(o){return o.type==='win'?'◎':o.type==='lose'?'×':'△';},
     formatCell(cell){
-      const resultSymbol = cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
       const colorDots = cell.oppColors.map(key => `<span class="color-dot" style="background-color:${this.getColorCode(key)}"></span>`).join('');
       const charInfo = [colorDots, cell.oppChar].filter(Boolean).join('');
-      const resultInfo = [cell.order, resultSymbol].filter(Boolean).join(' ');
+      const resultInfo = [this.orderText(cell.order), this.resultSymbol(cell.result)].filter(Boolean).join(' ');
       return [charInfo, resultInfo].filter(Boolean).join('<br>');
     },
     openModal(r,c){
@@ -249,9 +254,8 @@ createApp({
     },
     formatDeleteCell(cell){
       if(!this.cellFilled(cell))return '未入力';
-      const resultSymbol=cell.result==='勝ち'?'⭕️':cell.result==='負け'?'❌️':'';
       const colorNames = cell.oppColors.map(key => key).join(',');
-      return `${colorNames}${cell.oppChar} ${cell.order}${resultSymbol}`;
+      return `${colorNames}${cell.oppChar} ${this.orderText(cell.order)}${this.resultSymbol(cell.result)}`;
     },
     openTitleModal(){
       this.titleModal.open=true;
